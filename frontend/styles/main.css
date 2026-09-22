@@ -1,0 +1,15 @@
+#board {
+    border-radius: 1px;
+    border: solid;
+    justify-self: center;
+}
+
+circle {
+    cursor: pointer;
+    pointer-events: all;
+}
+
+text {
+    cursor: pointer;
+    user-select: None;
+}
