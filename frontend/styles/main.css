@@ -1,7 +1,11 @@
+body {
+    display: flex;
+    flex-direction: column;
+}
+
 #board {
     border-radius: 1px;
     border: solid;
-    justify-self: center;
 }
 
 circle {
@@ -13,3 +17,8 @@ text {
     cursor: pointer;
     user-select: None;
 }
+
+button{
+    width: 70px;
+}
+

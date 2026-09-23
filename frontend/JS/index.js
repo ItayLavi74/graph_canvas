@@ -1,15 +1,17 @@
 const svgNS = "http://www.w3.org/2000/svg";
 const svg = document.getElementById("board")
 
-let nodesCount = 0;
 const nodes = [];
+const edges = [];
 const RADIUS = 20;
+const createEdge = [];
+let didDrag = false;
 
-function drawNode(x, y, id) {
-    nodesCount++;
+function drawNode(x, y) {
 
     const g = document.createElementNS(svgNS, "g");
     g.setAttribute("transform", `translate(${x}, ${y})`);
+
     nodes.push(g);
 
     const circle = document.createElementNS(svgNS, "circle");
@@ -25,7 +27,7 @@ function drawNode(x, y, id) {
     text.setAttribute("y", 0);
     text.setAttribute("text-anchor", "middle");
     text.setAttribute("dominant-baseline", "middle");
-    text.textContent = nodes.indexOf(g);
+    text.textContent = nodes.indexOf(g) + 1;
 
     g.appendChild(circle);
     g.appendChild(text);
@@ -38,6 +40,7 @@ function drawNode(x, y, id) {
         e.stopPropagation();
 
         function onMouseMove(e) {
+            didDrag = true;
             setCordsToCursor(g, e);
         }
 
@@ -46,6 +49,30 @@ function drawNode(x, y, id) {
         document.addEventListener("mouseup", () => {
             document.removeEventListener("mousemove", onMouseMove);
         });
+
+    });
+
+    g.addEventListener("click", (e) => {
+        e.preventDefault();
+
+        if (didDrag) {
+            didDrag = false;
+            return;
+        }
+        if (createEdge[0] == g) {
+            circle.setAttribute("stroke", "#c48d00")
+            createEdge.pop()
+        } else if (createEdge.length == 1) {
+            // if we are choosing the second node
+            circle.setAttribute("stroke", "#0db8c4")
+            createEdge.push(g);
+
+            setTimeout(drawEdge, 300);
+            
+        } else {
+            circle.setAttribute("stroke", "#0db8c4")
+            createEdge.push(g)
+        }
     });
 
     g.addEventListener("contextmenu", (e) => {
@@ -57,7 +84,10 @@ function drawNode(x, y, id) {
         updateNumbers(index);
 
         svg.removeChild(g);
-    });
+    })
+
+
+
 
     g.addEventListener("click", (e) => {
         e.stopPropagation();
@@ -73,7 +103,7 @@ svg.addEventListener("click", (e) => {
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
 
-    drawNode(x, y, nodesCount);
+    drawNode(x, y);
 });
 
 function setCordsToCursor(g, e) {
@@ -93,4 +123,24 @@ function updateNumbers(index) {
         const text = nodes[i].querySelector("text");
         text.textContent = Number(text.textContent) - 1;
     }
+}
+
+// toggle create edges
+// drawEdgeButton = document.getElementById("createEdges");
+// drawEdgeButton.addEventListener("click", () => {
+//     drawEdgeToggle = drawEdgeToggle == true ? false : true;
+//     console.log(drawEdgeToggle);
+// })
+
+function drawEdge() {
+
+    console.log("creating an edge");
+
+    
+    
+    createEdge.forEach(elem => {
+        circle = elem.querySelector("circle");
+        circle.setAttribute("stroke", "#c48d00")
+    });
+    createEdge.length = 0;
 }
