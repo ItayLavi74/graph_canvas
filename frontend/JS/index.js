@@ -1,11 +1,16 @@
 const svgNS = "http://www.w3.org/2000/svg";
 const svg = document.getElementById("board")
 
+//group to store all edges - fix z cords
+const edgesGroup = document.createElementNS(svgNS, "g");
+svg.appendChild(edgesGroup);
+
 const nodes = [];
-const edges = [];
 const RADIUS = 20;
 const createEdge = [];
 let didDrag = false;
+
+const edgesByNode = new Map();
 
 function drawNode(x, y) {
 
@@ -13,6 +18,7 @@ function drawNode(x, y) {
     g.setAttribute("transform", `translate(${x}, ${y})`);
 
     nodes.push(g);
+    edgesByNode.set(g, []);
 
     const circle = document.createElementNS(svgNS, "circle");
     circle.setAttribute("cx", 0);
@@ -68,7 +74,7 @@ function drawNode(x, y) {
             createEdge.push(g);
 
             setTimeout(drawEdge, 300);
-            
+
         } else {
             circle.setAttribute("stroke", "#0db8c4")
             createEdge.push(g)
@@ -82,6 +88,9 @@ function drawNode(x, y) {
         console.log(index, nodes)
         nodes.splice(index, 1);
         updateNumbers(index);
+
+        removeConnectedLines(g);
+        edgesByNode.delete(g);
 
         svg.removeChild(g);
     })
@@ -114,7 +123,9 @@ function setCordsToCursor(g, e) {
     x = Math.max(RADIUS, Math.min(rect.width - RADIUS, x));
     y = Math.max(RADIUS, Math.min(rect.height - RADIUS, y));
 
+
     g.setAttribute("transform", `translate(${x}, ${y})`);
+    updateEdgesPosition(g);
 }
 
 function updateNumbers(index) {
@@ -133,14 +144,83 @@ function updateNumbers(index) {
 // })
 
 function drawEdge() {
+    node1 = createEdge[0];
+    node2 = createEdge[1];
+
+    node1Rect = createEdge[0].getBoundingClientRect();
+    node2Rect = createEdge[1].getBoundingClientRect();
+
+    boardRect = svg.getBoundingClientRect();
 
     console.log("creating an edge");
 
-    
-    
+    const line = document.createElementNS(svgNS, "line");
+
+    line.setAttribute("x1", `${node1Rect.left - boardRect.left + RADIUS}`);
+    line.setAttribute("y1", `${node1Rect.top - boardRect.top + RADIUS}`);
+    line.setAttribute("x2", `${node2Rect.left - boardRect.left + RADIUS}`);
+    line.setAttribute("y2", `${node2Rect.top - boardRect.top + RADIUS}`);
+    line.setAttribute("stroke", "black");
+    line.setAttribute("stroke-width", "3px");
+
+    const edge = [node1, node2, line];
+
+    edgesByNode.get(node1).push(edge);
+    edgesByNode.get(node2).push(edge);
+
+    // draw edge line
+    edgesGroup.appendChild(line);
+
     createEdge.forEach(elem => {
         circle = elem.querySelector("circle");
         circle.setAttribute("stroke", "#c48d00")
     });
     createEdge.length = 0;
+}
+
+function updateEdgesPosition(node) {
+    const nodeRect = node.getBoundingClientRect();
+    const boardRect = svg.getBoundingClientRect();
+
+    const x = nodeRect.left - boardRect.left + RADIUS;
+    const y = nodeRect.top - boardRect.top + RADIUS;
+
+    edgesByNode.get(node).forEach((edge) => {
+        const line = edge[2];
+        // if this node is the start node of this edge
+        if (edge.indexOf(node) == 0) {
+            line.setAttribute("x1", `${x}`);
+            line.setAttribute("y1", `${y}`);
+        } else {
+            line.setAttribute("x2", `${x}`);
+            line.setAttribute("y2", `${y}`);
+        }
+    })
+}
+
+function removeConnectedLines(node) {
+    const neighbors = [];
+
+    edgesByNode.get(node).forEach((elem) => {
+        // removing all edges starting from node
+        const line = elem[2];
+        edgesGroup.removeChild(line);
+
+        // collect neighbors
+        const neighbor = elem[0] == node ? elem[1] : elem[0];
+        neighbors.push(neighbor);
+    })
+
+    // remove edges from neighbors in 'edgesByNode'
+    neighbors.forEach((neighbor) => {
+        neighborEdges = edgesByNode.get(neighbor);
+        neighborEdges.forEach((elem) => {
+            if (elem[1] == node || elem[0] == node) {
+                const indexOfElem = neighborEdges.indexOf(elem);
+                neighborEdges.splice(indexOfElem, 1);
+            }
+        })
+
+    })
+
 }
