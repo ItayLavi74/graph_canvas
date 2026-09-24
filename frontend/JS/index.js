@@ -4,6 +4,8 @@ const svg = document.getElementById("board")
 //group to store all edges - fix z cords
 const edgesGroup = document.createElementNS(svgNS, "g");
 svg.appendChild(edgesGroup);
+const weightsGroup = document.createElementNS(svgNS, "g");
+svg.appendChild(weightsGroup);
 
 const nodes = [];
 const RADIUS = 20;
@@ -137,16 +139,8 @@ function updateNumbers(index) {
     }
 }
 
-// toggle create edges
-// drawEdgeButton = document.getElementById("createEdges");
-// drawEdgeButton.addEventListener("click", () => {
-//     drawEdgeToggle = drawEdgeToggle == true ? false : true;
-//     console.log(drawEdgeToggle);
-// })
 
 function drawEdge() {
-
-    const lineG = document.createElementNS(svgNS, "g");
 
     node1 = createEdge[0];
     node2 = createEdge[1];
@@ -158,36 +152,61 @@ function drawEdge() {
 
     const line = document.createElementNS(svgNS, "line");
 
+    const x1 = node1Rect.left - boardRect.left + RADIUS;
+    const y1 = node1Rect.top - boardRect.top + RADIUS;
+    const x2 = node2Rect.left - boardRect.left + RADIUS;
+    const y2 = node2Rect.top - boardRect.top + RADIUS;
+
     //set line attributes
     {
-        line.setAttribute("x1", `${node1Rect.left - boardRect.left + RADIUS}`);
-        line.setAttribute("y1", `${node1Rect.top - boardRect.top + RADIUS}`);
-        line.setAttribute("x2", `${node2Rect.left - boardRect.left + RADIUS}`);
-        line.setAttribute("y2", `${node2Rect.top - boardRect.top + RADIUS}`);
+        line.setAttribute("x1", `${x1}`);
+        line.setAttribute("y1", `${y1}`);
+        line.setAttribute("x2", `${x2}`);
+        line.setAttribute("y2", `${y2}`);
         line.setAttribute("stroke", "black");
         line.setAttribute("stroke-width", "5px");
     }
 
-    const text = document.createElementNS(svgNS, "text")
+    const weight = document.createElementNS(svgNS, "text");
+    // set weight attributes
+    {
+        const xDistance = Math.abs(x1 - x2);
+        const xMin = Math.min(x1, x2);
+        const yDistance = Math.abs(y1 - y2);
+        const yMin = Math.min(y1, y2);
 
-    const edge = [node1, node2, lineG];
+        weight.textContent = '0';
+        weight.setAttribute("x", xMin + xDistance / 2);
+        weight.setAttribute("y", yMin + yDistance / 2);
+        weight.setAttribute("fill", "green");
+        weight.classList.add("weight");
+    }
+
+    const edge = [node1, node2, line, weight];
 
     edgesByNode.get(node1).push(edge);
     edgesByNode.get(node2).push(edge);
 
-    // draw edge line
-    lineG.appendChild(line);
-    edgesGroup.appendChild(lineG);
+    // draw edge line and weight
+    edgesGroup.appendChild(line);
+    weightsGroup.appendChild(weight);
 
     // delete line on right click
     line.addEventListener("contextmenu", (e) => {
         e.preventDefault();
 
         // remove line from screen
-        edgesGroup.removeChild(lineG);
+        edgesGroup.removeChild(line);
+        weightsGroup.removeChild(weight);
 
         // remove edge from DB
         removeEdge(edge);
+    })
+
+    weight.addEventListener("click", (e) => {
+        e.stopPropagation();
+
+        
     })
 
 
@@ -206,8 +225,7 @@ function updateEdgesPosition(node) {
     const y = nodeRect.top - boardRect.top + RADIUS;
 
     edgesByNode.get(node).forEach((edge) => {
-        const lineG = edge[2];
-        const line = lineG.querySelector("line");
+        const line = edge[2];
 
         // if this node is the start node of this edge
         if (edge.indexOf(node) == 0) {
@@ -217,6 +235,8 @@ function updateEdgesPosition(node) {
             line.setAttribute("x2", `${x}`);
             line.setAttribute("y2", `${y}`);
         }
+
+        updateWeightPosition(edge);
     })
 }
 
@@ -224,9 +244,11 @@ function removeConnectedLines(node) {
     const neighbors = [];
 
     edgesByNode.get(node).forEach((elem) => {
-        // removing all edges starting from node
-        const lineG = elem[2];
-        edgesGroup.removeChild(lineG);
+        // removing all edgess tarting from node
+        const line = elem[2];
+        edgesGroup.removeChild(line);
+        const weight = elem[3];
+        weightsGroup.removeChild(weight);
 
         // collect neighbors
         const neighbor = elem[0] == node ? elem[1] : elem[0];
@@ -257,4 +279,29 @@ function removeEdge(edge) {
 
     node1edges.splice(index1, 1);
     node2edges.splice(index2, 1);
+}
+
+function updateWeightPosition(edge) {
+    const weight = edge[3];
+
+    const node1 = edge[0];
+    const node2 = edge[1];
+    const node1Rect = node1.getBoundingClientRect();
+    const node2Rect = node2.getBoundingClientRect();
+
+    const boardRect = svg.getBoundingClientRect();
+
+    const x1 = node1Rect.left - boardRect.left + RADIUS;
+    const y1 = node1Rect.top - boardRect.top + RADIUS;
+    const x2 = node2Rect.left - boardRect.left + RADIUS;
+    const y2 = node2Rect.top - boardRect.top + RADIUS;
+
+    const xDistance = Math.abs(x1 - x2);
+    const xMin = Math.min(x1, x2);
+    const yDistance = Math.abs(y1 - y2);
+    const yMin = Math.min(y1, y2);
+
+    weight.setAttribute("x", xMin + xDistance / 2);
+    weight.setAttribute("y", yMin + yDistance / 2);
+
 }

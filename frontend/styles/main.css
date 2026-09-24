@@ -36,3 +36,24 @@ button{
     width: 70px;
 }
 
+.weight {
+    font-family: monospace;
+    font-weight: bold;
+    font-size: xx-large;
+    color: green;
+    
+    stroke: white;
+    stroke-width: 5px;
+    paint-order: stroke;
+    
+    text-anchor: middle;
+    dominant-baseline: middle;
+
+    cursor: pointer;
+    pointer-events: all;
+}
+
+.weight:hover {
+    font-size: 2rem;
+}
+
