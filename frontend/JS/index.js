@@ -11,6 +11,7 @@ const nodes = [];
 const RADIUS = 20;
 const createEdge = [];
 let didDrag = false;
+let didInputWeight = false;
 
 const edgesByNode = new Map();
 
@@ -63,8 +64,9 @@ function drawNode(x, y) {
     g.addEventListener("click", (e) => {
         e.preventDefault();
 
-        if (didDrag) {
+        if (didDrag || didInputWeight) {
             didDrag = false;
+            didInputWeight = false;
             return;
         }
         if (createEdge[0] == g) {
@@ -111,6 +113,10 @@ function drawNode(x, y) {
 
 
 svg.addEventListener("click", (e) => {
+    if (didInputWeight) {
+        didInputWeight = false;
+        return;
+    }
     const rect = svg.getBoundingClientRect();
 
     const x = e.clientX - rect.left;
@@ -202,13 +208,41 @@ function drawEdge() {
         // remove edge from DB
         removeEdge(edge);
     })
+    
+    const input = document.getElementById("input-weight");
 
     weight.addEventListener("click", (e) => {
         e.stopPropagation();
-
+        
+        didInputWeight = true;
+        
+        const weightRect = weight.getBoundingClientRect();
+        const x = weightRect.left;
+        const y = weightRect.top;
+        
+        
+        input.style.display = "block";
+        input.style.left = x + "px";
+        input.style.top = y + "px";
+        
+        input.focus();
+        
         
     })
+    
+    input.addEventListener("blur", () => {
+        input.style.display = "none";
+        input.value = "";
+    })
 
+    input.addEventListener("keydown", (e) => {
+        if (e.key != "Enter") return;
+
+        weight.textContent = input.value.slice();
+
+        input.style.display = "none";
+        input.value.reset();
+    })
 
     createEdge.forEach(elem => {
         circle = elem.querySelector("circle");
@@ -304,4 +338,34 @@ function updateWeightPosition(edge) {
     weight.setAttribute("x", xMin + xDistance / 2);
     weight.setAttribute("y", yMin + yDistance / 2);
 
+}
+
+function inputWeight(weight) {
+    didInputWeight = true;
+
+    const weightRect = weight.getBoundingClientRect();
+    const x = weightRect.left;
+    const y = weightRect.top;
+
+    const input = document.getElementById("input-weight");
+
+    input.style.display = "block";
+    input.style.left = x + "px";
+    input.style.top = y + "px";
+
+    input.focus();
+
+    input.addEventListener("blur", () => {
+        input.style.display = "none";
+        input.value = "";
+    })
+
+    input.addEventListener("keydown", (e) => {
+        if (e.key != "Enter") return;
+
+        weight.textContent = input.value;
+
+        input.style.display = "none";
+        input.value.reset();
+    })
 }

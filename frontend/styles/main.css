@@ -57,3 +57,10 @@ button{
     font-size: 2rem;
 }
 
+#input-weight {
+    position: absolute;
+    display: none;
+    width: 20px;
+    
+}
+
