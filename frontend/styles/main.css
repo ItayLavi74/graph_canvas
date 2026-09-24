@@ -12,10 +12,24 @@ circle {
     cursor: pointer;
     pointer-events: all;
 }
+circle:hover {
+    stroke-width: 3px;
+}
+
+line {
+    cursor: pointer;
+    pointer-events: all;
+}
+line:hover {
+    stroke-color: blue;
+    stroke-width: 10px;
+}
+
 
 text {
     cursor: pointer;
     user-select: None;
+    pointer-events: none;
 }
 
 button{

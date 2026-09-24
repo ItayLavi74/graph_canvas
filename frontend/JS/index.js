@@ -81,16 +81,18 @@ function drawNode(x, y) {
         }
     });
 
+    // delete node on right click
     g.addEventListener("contextmenu", (e) => {
         e.preventDefault();
 
+        // updating number on other nodes by
+        // removing this node from the nodes array
         const index = nodes.indexOf(g);
-        console.log(index, nodes)
         nodes.splice(index, 1);
         updateNumbers(index);
 
+        // remove all lines connected to this node
         removeConnectedLines(g);
-        edgesByNode.delete(g);
 
         svg.removeChild(g);
     })
@@ -129,7 +131,6 @@ function setCordsToCursor(g, e) {
 }
 
 function updateNumbers(index) {
-    console.log(index);
     for (let i = index; i < nodes.length; i++) {
         const text = nodes[i].querySelector("text");
         text.textContent = Number(text.textContent) - 1;
@@ -144,6 +145,9 @@ function updateNumbers(index) {
 // })
 
 function drawEdge() {
+
+    const lineG = document.createElementNS(svgNS, "g");
+
     node1 = createEdge[0];
     node2 = createEdge[1];
 
@@ -152,24 +156,40 @@ function drawEdge() {
 
     boardRect = svg.getBoundingClientRect();
 
-    console.log("creating an edge");
-
     const line = document.createElementNS(svgNS, "line");
 
-    line.setAttribute("x1", `${node1Rect.left - boardRect.left + RADIUS}`);
-    line.setAttribute("y1", `${node1Rect.top - boardRect.top + RADIUS}`);
-    line.setAttribute("x2", `${node2Rect.left - boardRect.left + RADIUS}`);
-    line.setAttribute("y2", `${node2Rect.top - boardRect.top + RADIUS}`);
-    line.setAttribute("stroke", "black");
-    line.setAttribute("stroke-width", "3px");
+    //set line attributes
+    {
+        line.setAttribute("x1", `${node1Rect.left - boardRect.left + RADIUS}`);
+        line.setAttribute("y1", `${node1Rect.top - boardRect.top + RADIUS}`);
+        line.setAttribute("x2", `${node2Rect.left - boardRect.left + RADIUS}`);
+        line.setAttribute("y2", `${node2Rect.top - boardRect.top + RADIUS}`);
+        line.setAttribute("stroke", "black");
+        line.setAttribute("stroke-width", "5px");
+    }
 
-    const edge = [node1, node2, line];
+    const text = document.createElementNS(svgNS, "text")
+
+    const edge = [node1, node2, lineG];
 
     edgesByNode.get(node1).push(edge);
     edgesByNode.get(node2).push(edge);
 
     // draw edge line
-    edgesGroup.appendChild(line);
+    lineG.appendChild(line);
+    edgesGroup.appendChild(lineG);
+
+    // delete line on right click
+    line.addEventListener("contextmenu", (e) => {
+        e.preventDefault();
+
+        // remove line from screen
+        edgesGroup.removeChild(lineG);
+
+        // remove edge from DB
+        removeEdge(edge);
+    })
+
 
     createEdge.forEach(elem => {
         circle = elem.querySelector("circle");
@@ -186,7 +206,9 @@ function updateEdgesPosition(node) {
     const y = nodeRect.top - boardRect.top + RADIUS;
 
     edgesByNode.get(node).forEach((edge) => {
-        const line = edge[2];
+        const lineG = edge[2];
+        const line = lineG.querySelector("line");
+
         // if this node is the start node of this edge
         if (edge.indexOf(node) == 0) {
             line.setAttribute("x1", `${x}`);
@@ -203,8 +225,8 @@ function removeConnectedLines(node) {
 
     edgesByNode.get(node).forEach((elem) => {
         // removing all edges starting from node
-        const line = elem[2];
-        edgesGroup.removeChild(line);
+        const lineG = elem[2];
+        edgesGroup.removeChild(lineG);
 
         // collect neighbors
         const neighbor = elem[0] == node ? elem[1] : elem[0];
@@ -213,14 +235,26 @@ function removeConnectedLines(node) {
 
     // remove edges from neighbors in 'edgesByNode'
     neighbors.forEach((neighbor) => {
-        neighborEdges = edgesByNode.get(neighbor);
-        neighborEdges.forEach((elem) => {
-            if (elem[1] == node || elem[0] == node) {
-                const indexOfElem = neighborEdges.indexOf(elem);
-                neighborEdges.splice(indexOfElem, 1);
-            }
-        })
-
+        const neighborEdges = edgesByNode.get(neighbor);
+        const newNeighborEdges = neighborEdges.filter(elem =>
+            elem[0] !== node && elem[1] !== node);
+        edgesByNode.set(neighbor, newNeighborEdges);
     })
 
+
+    edgesByNode.delete(node);
+}
+
+function removeEdge(edge) {
+    node1 = edge[0];
+    node2 = edge[1];
+
+    node1edges = edgesByNode.get(node1);
+    node2edges = edgesByNode.get(node2);
+
+    index1 = node1edges.indexOf(edge);
+    index2 = node2edges.indexOf(edge);
+
+    node1edges.splice(index1, 1);
+    node2edges.splice(index2, 1);
 }
