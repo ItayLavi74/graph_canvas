@@ -9,6 +9,8 @@ svg.appendChild(weightsGroup);
 
 const input = document.getElementById("input-weight");
 
+const MAX_WEIGHT_DIGITS = 3;
+
 const nodes = [];
 const RADIUS = 20;
 const createEdge = [];
@@ -16,7 +18,7 @@ let didDrag = false;
 let didInputWeight = false;
 let currentWeight = null;
 
-const edgesByNode = new Map();
+const graph = new Map();
 
 function drawNode(x, y) {
 
@@ -24,7 +26,7 @@ function drawNode(x, y) {
     g.setAttribute("transform", `translate(${x}, ${y})`);
 
     nodes.push(g);
-    edgesByNode.set(g, []);
+    graph.set(g, []);
 
     const circle = document.createElementNS(svgNS, "circle");
     circle.setAttribute("cx", 0);
@@ -194,8 +196,8 @@ function drawEdge() {
 
     const edge = [node1, node2, line, weight];
 
-    edgesByNode.get(node1).push(edge);
-    edgesByNode.get(node2).push(edge);
+    graph.get(node1).push(edge);
+    graph.get(node2).push(edge);
 
     // draw edge line and weight
     edgesGroup.appendChild(line);
@@ -229,6 +231,7 @@ function drawEdge() {
         input.style.top = y + "px";
 
         input.focus();
+
     })
 
 
@@ -248,11 +251,36 @@ function drawEdge() {
     });
 
     input.addEventListener("keydown", (e) => {
-        if (e.key != "Enter") return;
+        let key = e.key;
 
-        currentWeight.textContent = input.value.slice();
-        input.style.display = "none";
+        // update the weight if Enter is pressed
+        if (key == "Enter") {
+            input.style.display = "none";
 
+            // prevent empty weight
+            if (input.value != '')
+                currentWeight.textContent = input.value.slice();
+
+            return;
+        }
+
+        // if key is not a number -> dont allow
+        const isKeyValid = /^[0-9]$/.test(key) || key == 'Backspace'
+        if (!isKeyValid) {
+            console.log("Only numbers allowed!");
+            e.preventDefault();
+        }
+
+        // 0 cannot be first digit of more that one digit number
+        if (input.value == '0' && key != 'Backspace') {
+            e.preventDefault();
+        }
+
+        // 3 digits max
+        if (input.value.length >= MAX_WEIGHT_DIGITS && key != 'Backspace') {
+            console.log("3 digits max");
+            e.preventDefault();
+        }
     });
 }
 
@@ -263,7 +291,7 @@ function updateEdgesPosition(node) {
     const x = nodeRect.left - boardRect.left + RADIUS;
     const y = nodeRect.top - boardRect.top + RADIUS;
 
-    edgesByNode.get(node).forEach((edge) => {
+    graph.get(node).forEach((edge) => {
         const line = edge[2];
 
         // if this node is the start node of this edge
@@ -282,7 +310,7 @@ function updateEdgesPosition(node) {
 function removeConnectedLines(node) {
     const neighbors = [];
 
-    edgesByNode.get(node).forEach((elem) => {
+    graph.get(node).forEach((elem) => {
         // removing all edgess tarting from node
         const line = elem[2];
         edgesGroup.removeChild(line);
@@ -296,22 +324,22 @@ function removeConnectedLines(node) {
 
     // remove edges from neighbors in 'edgesByNode'
     neighbors.forEach((neighbor) => {
-        const neighborEdges = edgesByNode.get(neighbor);
+        const neighborEdges = graph.get(neighbor);
         const newNeighborEdges = neighborEdges.filter(elem =>
             elem[0] !== node && elem[1] !== node);
-        edgesByNode.set(neighbor, newNeighborEdges);
+        graph.set(neighbor, newNeighborEdges);
     })
 
 
-    edgesByNode.delete(node);
+    graph.delete(node);
 }
 
 function removeEdge(edge) {
     node1 = edge[0];
     node2 = edge[1];
 
-    node1edges = edgesByNode.get(node1);
-    node2edges = edgesByNode.get(node2);
+    node1edges = graph.get(node1);
+    node2edges = graph.get(node2);
 
     index1 = node1edges.indexOf(edge);
     index2 = node2edges.indexOf(edge);
@@ -343,33 +371,4 @@ function updateWeightPosition(edge) {
     weight.setAttribute("x", xMin + xDistance / 2);
     weight.setAttribute("y", yMin + yDistance / 2);
 
-}
-
-function inputWeight(weight) {
-    didInputWeight = true;
-
-    const weightRect = weight.getBoundingClientRect();
-    const x = weightRect.left;
-    const y = weightRect.top;
-
-    const input = document.getElementById("input-weight");
-
-    input.style.display = "block";
-    input.style.left = x + "px";
-    input.style.top = y + "px";
-
-    input.focus();
-
-    input.addEventListener("blur", () => {
-        input.style.display = "none";
-        input.value = "None";
-    })
-
-    input.addEventListener("keydown", (e) => {
-        if (e.key != "Enter") return;
-
-        weight.textContent = input.value;
-
-        input.style.display = "none";
-    })
 }
