@@ -209,8 +209,8 @@ function drawEdge() {
         removeEdge(edge);
     })
     
-    const input = document.getElementById("input-weight");
-
+    let input = document.getElementById("input-weight");
+    
     weight.addEventListener("click", (e) => {
         e.stopPropagation();
         
@@ -226,23 +226,29 @@ function drawEdge() {
         input.style.top = y + "px";
         
         input.focus();
+
+        input.addEventListener("keydown", (e) => {
+            if (e.key != "Enter") return;
+            
+            weight.textContent = input.value.slice();
+            console.log("here");
+            input.style.display = "none";
+
+            removeEventListener("keydown", listener)
+        });
+        function handleEnterKeydown(e) {
+            
+        }
+
         
-        
+        input.addEventListener("blur", () => {
+            console.log("blur");
+            input.style.display = "none";
+            input.value = "";
+        }, { once: true });
     })
     
-    input.addEventListener("blur", () => {
-        input.style.display = "none";
-        input.value = "";
-    })
 
-    input.addEventListener("keydown", (e) => {
-        if (e.key != "Enter") return;
-
-        weight.textContent = input.value.slice();
-
-        input.style.display = "none";
-        input.value.reset();
-    })
 
     createEdge.forEach(elem => {
         circle = elem.querySelector("circle");
@@ -357,7 +363,7 @@ function inputWeight(weight) {
 
     input.addEventListener("blur", () => {
         input.style.display = "none";
-        input.value = "";
+        input.value = "None";
     })
 
     input.addEventListener("keydown", (e) => {
@@ -366,6 +372,5 @@ function inputWeight(weight) {
         weight.textContent = input.value;
 
         input.style.display = "none";
-        input.value.reset();
     })
 }
