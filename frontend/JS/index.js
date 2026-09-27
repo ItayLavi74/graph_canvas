@@ -7,11 +7,14 @@ svg.appendChild(edgesGroup);
 const weightsGroup = document.createElementNS(svgNS, "g");
 svg.appendChild(weightsGroup);
 
+const input = document.getElementById("input-weight");
+
 const nodes = [];
 const RADIUS = 20;
 const createEdge = [];
 let didDrag = false;
 let didInputWeight = false;
+let currentWeight = null;
 
 const edgesByNode = new Map();
 
@@ -69,6 +72,7 @@ function drawNode(x, y) {
             didInputWeight = false;
             return;
         }
+
         if (createEdge[0] == g) {
             circle.setAttribute("stroke", "#c48d00")
             createEdge.pop()
@@ -208,46 +212,25 @@ function drawEdge() {
         // remove edge from DB
         removeEdge(edge);
     })
-    
-    let input = document.getElementById("input-weight");
-    
+
     weight.addEventListener("click", (e) => {
         e.stopPropagation();
-        
+
         didInputWeight = true;
-        
+        currentWeight = weight;
+
         const weightRect = weight.getBoundingClientRect();
         const x = weightRect.left;
         const y = weightRect.top;
-        
-        
+
+
         input.style.display = "block";
         input.style.left = x + "px";
         input.style.top = y + "px";
-        
+
         input.focus();
-
-        input.addEventListener("keydown", (e) => {
-            if (e.key != "Enter") return;
-            
-            weight.textContent = input.value.slice();
-            console.log("here");
-            input.style.display = "none";
-
-            removeEventListener("keydown", listener)
-        });
-        function handleEnterKeydown(e) {
-            
-        }
-
-        
-        input.addEventListener("blur", () => {
-            console.log("blur");
-            input.style.display = "none";
-            input.value = "";
-        }, { once: true });
     })
-    
+
 
 
     createEdge.forEach(elem => {
@@ -255,6 +238,22 @@ function drawEdge() {
         circle.setAttribute("stroke", "#c48d00")
     });
     createEdge.length = 0;
+}
+
+// input weight events
+{
+    input.addEventListener("blur", () => {
+        input.style.display = "none";
+        input.value = "";
+    });
+
+    input.addEventListener("keydown", (e) => {
+        if (e.key != "Enter") return;
+
+        currentWeight.textContent = input.value.slice();
+        input.style.display = "none";
+
+    });
 }
 
 function updateEdgesPosition(node) {
