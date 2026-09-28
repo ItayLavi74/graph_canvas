@@ -11,14 +11,18 @@ const input = document.getElementById("input-weight");
 
 const MAX_WEIGHT_DIGITS = 3;
 
+let directional_graph = true;
+
 const nodes = [];
 const RADIUS = 20;
 const createEdge = [];
 let didDrag = false;
 let didInputWeight = false;
 let currentWeight = null;
+let isSecondEdge = false;
 
 const graph = new Map();
+const linesByNode = new Map();
 
 function drawNode(x, y) {
 
@@ -83,7 +87,7 @@ function drawNode(x, y) {
             circle.setAttribute("stroke", "#0db8c4")
             createEdge.push(g);
 
-            setTimeout(drawEdge, 300);
+            setTimeout(drawEdge(createEdge[0], createEdge[1]), 100);
 
         } else {
             circle.setAttribute("stroke", "#0db8c4")
@@ -151,14 +155,23 @@ function updateNumbers(index) {
     }
 }
 
+// check if the edge is already exist
+function hasEdge(node1, node2) {
+    let edgeAlreadyExist = false;
+    graph.get(node1).forEach((edge) => {
+        if (edge[1] == node2) {
+            edgeAlreadyExist = true;
+        }
+    })
 
-function drawEdge() {
+    return edgeAlreadyExist;
+}
 
-    node1 = createEdge[0];
-    node2 = createEdge[1];
 
-    node1Rect = createEdge[0].getBoundingClientRect();
-    node2Rect = createEdge[1].getBoundingClientRect();
+function drawEdge(node1, node2) {
+
+    node1Rect = node1.getBoundingClientRect();
+    node2Rect = node2.getBoundingClientRect();
 
     boardRect = svg.getBoundingClientRect();
 
@@ -178,7 +191,8 @@ function drawEdge() {
         line.setAttribute("stroke", "black");
         line.setAttribute("stroke-width", "5px");
     }
-
+    console.log(-(y2 - y1) / (x2 - x1));
+    // m = |y2-y1|/|x2-x1|
     const weight = document.createElementNS(svgNS, "text");
     // set weight attributes
     {
@@ -194,10 +208,19 @@ function drawEdge() {
         weight.classList.add("weight");
     }
 
-    const edge = [node1, node2, line, weight];
+    const edge1 = [node1, node2, line, weight];
+    const edge2 = [node2, node1, line, weight];
 
-    graph.get(node1).push(edge);
-    graph.get(node2).push(edge);
+    graph.get(node1).push(edge1);
+    graph.get(node2).push(edge1)
+
+    if (!directional_graph) {
+        if (!isSecondEdge) {
+            isSecondEdge = true;
+            drawEdge(node2, node1);
+        }
+        isSecondEdge = false;
+    }
 
     // draw edge line and weight
     edgesGroup.appendChild(line);
@@ -212,7 +235,14 @@ function drawEdge() {
         weightsGroup.removeChild(weight);
 
         // remove edge from DB
-        removeEdge(edge);
+        if (!directional_graph) {
+            removeEdge(edge1);
+            removeEdge(edge2);
+
+        }
+        else {
+            removeEdge(edge1)
+        }
     })
 
     weight.addEventListener("click", (e) => {
@@ -284,6 +314,7 @@ function drawEdge() {
     });
 }
 
+// update edges position while moving
 function updateEdgesPosition(node) {
     const nodeRect = node.getBoundingClientRect();
     const boardRect = svg.getBoundingClientRect();
