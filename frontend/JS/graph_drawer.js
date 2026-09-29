@@ -19,14 +19,14 @@ const input = document.getElementById("input-weight");
 
 const MAX_WEIGHT_DIGITS = 3;
 
-const directional_graph = false;
+const directional_graph = true;
 
 const nodes = [];
 const RADIUS = 20;
 const createEdge = [];
 let didDrag = false;
 let didInputWeight = false;
-let currentWeight = null;
+let currentEdge = null;
 let isSecondEdge = false;
 
 const graph = new Map();
@@ -129,19 +129,25 @@ function drawNode(x, y) {
     return g;
 }
 
+// svg event listeners
+{
+    svg.addEventListener("click", (e) => {
+        if (didInputWeight) {
+            didInputWeight = false;
+            return;
+        }
+        const rect = svg.getBoundingClientRect();
 
-svg.addEventListener("click", (e) => {
-    if (didInputWeight) {
-        didInputWeight = false;
-        return;
-    }
-    const rect = svg.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
 
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
+        drawNode(x, y);
+    });
 
-    drawNode(x, y);
-});
+    svg.addEventListener("contextmenu", (e) => {
+        e.preventDefault();
+    });
+}
 
 function setCordsToCursor(g, e) {
     const rect = svg.getBoundingClientRect();
@@ -156,12 +162,14 @@ function setCordsToCursor(g, e) {
     updateEdgesPosition(g);
 }
 
+
 function updateNumbers(index) {
     for (let i = index; i < nodes.length; i++) {
         const text = nodes[i].querySelector("text");
         text.textContent = Number(text.textContent) - 1;
     }
 }
+
 
 // check if the edge is already exist
 function hasEdge(node1, node2) {
@@ -282,7 +290,7 @@ function drawEdge(node1, node2) {
             e.stopPropagation();
 
             didInputWeight = true;
-            currentWeight = weight;
+            currentEdge = edge;
 
             const weightRect = weight.getBoundingClientRect();
             const x = weightRect.left;
@@ -344,8 +352,20 @@ function getGhostEdge(edge) {
             input.style.display = "none";
 
             // prevent empty weight
-            if (input.value != '')
-                currentWeight.textContent = input.value.slice();
+            if (input.value != '') {
+                const weight = currentEdge[3];
+
+                weight.textContent = input.value.slice();
+                // update the second edge if graph isn't directional
+                if (!directional_graph) {
+                    const ghostEdge = getGhostEdge(currentEdge);
+                    const ghostWeight = ghostEdge[3];
+
+                    ghostWeight.textContent = weight.textContent;
+
+                }
+            }
+
 
             return;
         }
