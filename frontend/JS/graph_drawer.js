@@ -171,7 +171,7 @@ function hasEdge(node1, node2) {
             edgeAlreadyExist = true;
         }
     })
-    console.log(edgeAlreadyExist);
+
     return edgeAlreadyExist;
 }
 
