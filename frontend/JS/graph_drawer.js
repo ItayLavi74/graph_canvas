@@ -19,7 +19,7 @@ const input = document.getElementById("input-weight");
 
 const MAX_WEIGHT_DIGITS = 3;
 
-const directional_graph = false;
+const directional_graph = true;
 
 const nodes = [];
 const RADIUS = 20;
@@ -237,8 +237,8 @@ function drawEdge(node1, node2) {
         if (!isSecondEdge) {
             isSecondEdge = true;
             drawEdge(node2, node1);
+            isSecondEdge = false;
         }
-        isSecondEdge = false;
     }
 
     // draw edge line and weight
@@ -252,6 +252,16 @@ function drawEdge(node1, node2) {
         // remove line from screen
         edgesGroup.removeChild(line);
         weightsGroup.removeChild(weight);
+
+        // remove doubled line if graph is non directional
+        if (!directional_graph) {
+            const ghostEdge = getGhostEdge(edge);
+            const ghostLine = ghostEdge[2];
+            const ghostWeight = ghostEdge[3];
+
+            edgesGroup.removeChild(ghostLine);
+            weightsGroup.removeChild(ghostWeight);
+        }
 
         // remove edge from DB
         if (!directional_graph) {
@@ -290,6 +300,21 @@ function drawEdge(node1, node2) {
         circle.setAttribute("stroke", "#c48d00")
     });
     createEdge.length = 0;
+}
+
+// return ghost edge for dealing with double edge in a non directional graph
+function getGhostEdge(edge) {
+    const node1 = edge[0];
+    const node2 = edge[1];
+
+    let ghostEdge;
+    graph.get(node1).forEach(e => {
+        if (e[0] == node2) {
+            ghostEdge = e;
+            return;
+        }
+    })
+    return ghostEdge;
 }
 
 // input weight events
