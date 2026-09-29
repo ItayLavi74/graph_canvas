@@ -19,7 +19,7 @@ const input = document.getElementById("input-weight");
 
 const MAX_WEIGHT_DIGITS = 3;
 
-let directional_graph = true;
+const directional_graph = true;
 
 const nodes = [];
 const RADIUS = 20;
@@ -183,15 +183,15 @@ function drawEdge(node1, node2) {
 
     boardRect = svg.getBoundingClientRect();
 
-    const line = document.createElementNS(svgNS, "path");
+    let line;
 
-    const x1 = node1Rect.left - boardRect.left + RADIUS;
-    const y1 = node1Rect.top - boardRect.top + RADIUS;
-    const x2 = node2Rect.left - boardRect.left + RADIUS;
-    const y2 = node2Rect.top - boardRect.top + RADIUS;
+    const [x1, y1] = getNodeCords(node1);
+    const [x2, y2] = getNodeCords(node2);
 
     //set line attributes
-    {
+    if (directional_graph) {
+        line = document.createElementNS(svgNS, "path");
+
         line.setAttribute("fill", "none");
         line.setAttribute("stroke", "black");
         line.setAttribute("stroke-width", "3px");
@@ -202,6 +202,15 @@ function drawEdge(node1, node2) {
 
         line.setAttribute("d", `M ${x1},${y1} Q ${cx},${cy} ${x2},${y2}`);
         line.setAttribute("marker-end", "url(#arrowhead-black)");
+    }
+    else {
+        line = document.createElementNS(svgNS, "line");
+        line.setAttribute("x1", `${x1}`);
+        line.setAttribute("y1", `${y1}`);
+        line.setAttribute("x2", `${x2}`);
+        line.setAttribute("y2", `${y2}`);
+        line.setAttribute("stroke", "black");
+        line.setAttribute("stroke-width", "5px");
     }
 
     // create weight
@@ -218,7 +227,6 @@ function drawEdge(node1, node2) {
 
         updateWeightPosition(edge);
     }
-
 
     graph.get(node1).push(edge);
     graph.get(node2).push(edge);
@@ -356,24 +364,35 @@ function updateEdgesPosition(node) {
 
     graph.get(node).forEach((edge) => {
         const line = edge[2];
-        // if this node is the start of this edge
-        if (edge.indexOf(node) == 0) {
-            const secondNode = edge[1];
-            const [x2, y2] = getNodeCords(secondNode);
-            const [cx, cy] = getCurvedCenterFromNodes(node, secondNode);
+        if (directional_graph) {
+            // if this node is the start of this edge
+            if (edge.indexOf(node) == 0) {
+                const secondNode = edge[1];
+                const [x2, y2] = getNodeCords(secondNode);
+                const [cx, cy] = getCurvedCenterFromNodes(node, secondNode);
 
-            //update line cords
-            line.setAttribute("d", `M ${x1},${y1} Q ${cx},${cy} ${x2},${y2}`);
+                //update line cords
+                line.setAttribute("d", `M ${x1},${y1} Q ${cx},${cy} ${x2},${y2}`);
 
-        } else { // if this node is the end of this edge
-            const secondNode = edge[0];
-            const [x2, y2] = getNodeCords(secondNode);
-            const [cx, cy] = getCurvedCenterFromNodes(secondNode, node);
+            } else { // if this node is the end of this edge
+                const secondNode = edge[0];
+                const [x2, y2] = getNodeCords(secondNode);
+                const [cx, cy] = getCurvedCenterFromNodes(secondNode, node);
 
-            //update line cords
-            line.setAttribute("d", `M ${x2},${y2} Q ${cx},${cy} ${x1},${y1}`);
+                //update line cords
+                line.setAttribute("d", `M ${x2},${y2} Q ${cx},${cy} ${x1},${y1}`);
+            }
         }
-
+        else {
+            // if this node is the start node of this edge
+            if (edge.indexOf(node) == 0) {
+                line.setAttribute("x1", `${x1}`);
+                line.setAttribute("y1", `${y1}`);
+            } else {    // if this node is the end node of this edge
+                line.setAttribute("x2", `${x1}`);
+                line.setAttribute("y2", `${y1}`);
+            }
+        }
         updateWeightPosition(edge);
     })
 }
@@ -459,8 +478,22 @@ function updateWeightPosition(edge) {
     const node1 = edge[0];
     const node2 = edge[1];
 
-    const [cx, cy] = getCurvedCenterFromNodes(node1, node2);
+    if (directional_graph) {
+        const [cx, cy] = getCurvedCenterFromNodes(node1, node2);
 
-    weight.setAttribute("x", cx);
-    weight.setAttribute("y", cy);
+        weight.setAttribute("x", cx);
+        weight.setAttribute("y", cy);
+    }
+    else {
+        const [x1, y1] = getNodeCords(node1);
+        const [x2, y2] = getNodeCords(node2);
+
+        const xDistance = Math.abs(x1 - x2);
+        const xMin = Math.min(x1, x2);
+        const yDistance = Math.abs(y1 - y2);
+        const yMin = Math.min(y1, y2);
+
+        weight.setAttribute("x", xMin + xDistance / 2);
+        weight.setAttribute("y", yMin + yDistance / 2);
+    }
 }
