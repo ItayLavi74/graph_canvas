@@ -7,6 +7,14 @@ svg.appendChild(edgesGroup);
 const weightsGroup = document.createElementNS(svgNS, "g");
 svg.appendChild(weightsGroup);
 
+//AI generated
+const defs = document.createElementNS(svgNS, "defs");
+svg.appendChild(defs);
+
+defs.appendChild(createArrowMarker(svgNS, "arrowhead-black", "black"));
+defs.appendChild(createArrowMarker(svgNS, "arrowhead-red", "red"));
+// AI generated end
+
 const input = document.getElementById("input-weight");
 
 const MAX_WEIGHT_DIGITS = 3;
@@ -175,7 +183,7 @@ function drawEdge(node1, node2) {
 
     boardRect = svg.getBoundingClientRect();
 
-    const line = document.createElementNS(svgNS, "line");
+    const line = document.createElementNS(svgNS, "path");
 
     const x1 = node1Rect.left - boardRect.left + RADIUS;
     const y1 = node1Rect.top - boardRect.top + RADIUS;
@@ -184,37 +192,40 @@ function drawEdge(node1, node2) {
 
     //set line attributes
     {
-        line.setAttribute("x1", `${x1}`);
-        line.setAttribute("y1", `${y1}`);
-        line.setAttribute("x2", `${x2}`);
-        line.setAttribute("y2", `${y2}`);
+        line.setAttribute("fill", "none");
         line.setAttribute("stroke", "black");
-        line.setAttribute("stroke-width", "5px");
+        line.setAttribute("stroke-width", "3px");
+
+        // add arrow and curve
+
+        const [cx, cy] = getCurvedCenterFromNodes(node1, node2);
+
+        line.setAttribute("d", `M ${x1},${y1} Q ${cx},${cy} ${x2},${y2}`);
+        line.setAttribute("marker-end", "url(#arrowhead-black)");
     }
-    console.log(-(y2 - y1) / (x2 - x1));
-    // m = |y2-y1|/|x2-x1|
+
+    // create weight
     const weight = document.createElementNS(svgNS, "text");
+
+    // create edge
+    const edge = [node1, node2, line, weight];
+
     // set weight attributes
     {
-        const xDistance = Math.abs(x1 - x2);
-        const xMin = Math.min(x1, x2);
-        const yDistance = Math.abs(y1 - y2);
-        const yMin = Math.min(y1, y2);
-
         weight.textContent = '0';
-        weight.setAttribute("x", xMin + xDistance / 2);
-        weight.setAttribute("y", yMin + yDistance / 2);
         weight.setAttribute("fill", "green");
         weight.classList.add("weight");
+
+        updateWeightPosition(edge);
     }
 
-    const edge1 = [node1, node2, line, weight];
-    const edge2 = [node2, node1, line, weight];
 
-    graph.get(node1).push(edge1);
-    graph.get(node2).push(edge1)
+    graph.get(node1).push(edge);
+    graph.get(node2).push(edge);
 
+    // if graph is non dircational add the reversed edge
     if (!directional_graph) {
+        // flag for drawing the second edge (the reversed one) only once
         if (!isSecondEdge) {
             isSecondEdge = true;
             drawEdge(node2, node1);
@@ -236,12 +247,13 @@ function drawEdge(node1, node2) {
 
         // remove edge from DB
         if (!directional_graph) {
-            removeEdge(edge1);
-            removeEdge(edge2);
+            const reversedEdge = [node2, node1, line, weight];
 
+            removeEdge(edge);
+            removeEdge(reversedEdge);
         }
         else {
-            removeEdge(edge1)
+            removeEdge(edge);
         }
     })
 
@@ -263,7 +275,6 @@ function drawEdge(node1, node2) {
         input.focus();
 
     })
-
 
 
     createEdge.forEach(elem => {
@@ -314,24 +325,53 @@ function drawEdge(node1, node2) {
     });
 }
 
+// returns the center between two dots
+function getCurvedCenterFromNodes(node1, node2) {
+
+    const [x1, y1] = getNodeCords(node1);
+    const [x2, y2] = getNodeCords(node2);
+
+    const dx = x2 - x1;
+    const dy = y2 - y1;
+    const len = Math.hypot(dx, dy);
+
+    let cx = (x1 + x2) / 2;
+    let cy = (y1 + y2) / 2;
+
+    if (len !== 0) {
+        const nx = -dy / len;
+        const ny = dx / len;
+        const curve = 20;
+        cx += nx * curve;
+        cy += ny * curve;
+    }
+
+    return [cx, cy];
+}
+
 // update edges position while moving
 function updateEdgesPosition(node) {
-    const nodeRect = node.getBoundingClientRect();
-    const boardRect = svg.getBoundingClientRect();
 
-    const x = nodeRect.left - boardRect.left + RADIUS;
-    const y = nodeRect.top - boardRect.top + RADIUS;
+    const [x1, y1] = getNodeCords(node);
 
     graph.get(node).forEach((edge) => {
         const line = edge[2];
-
-        // if this node is the start node of this edge
+        // if this node is the start of this edge
         if (edge.indexOf(node) == 0) {
-            line.setAttribute("x1", `${x}`);
-            line.setAttribute("y1", `${y}`);
-        } else {
-            line.setAttribute("x2", `${x}`);
-            line.setAttribute("y2", `${y}`);
+            const secondNode = edge[1];
+            const [x2, y2] = getNodeCords(secondNode);
+            const [cx, cy] = getCurvedCenterFromNodes(node, secondNode);
+
+            //update line cords
+            line.setAttribute("d", `M ${x1},${y1} Q ${cx},${cy} ${x2},${y2}`);
+
+        } else { // if this node is the end of this edge
+            const secondNode = edge[0];
+            const [x2, y2] = getNodeCords(secondNode);
+            const [cx, cy] = getCurvedCenterFromNodes(secondNode, node);
+
+            //update line cords
+            line.setAttribute("d", `M ${x2},${y2} Q ${cx},${cy} ${x1},${y1}`);
         }
 
         updateWeightPosition(edge);
@@ -339,6 +379,7 @@ function updateEdgesPosition(node) {
 }
 
 function removeConnectedLines(node) {
+    node.getBoundingClientRect();
     const neighbors = [];
 
     graph.get(node).forEach((elem) => {
@@ -365,41 +406,61 @@ function removeConnectedLines(node) {
     graph.delete(node);
 }
 
-function removeEdge(edge) {
-    node1 = edge[0];
-    node2 = edge[1];
+function getNodeCords(node) {
+    const boardRect = svg.getBoundingClientRect();
+    const nodeRect = node.getBoundingClientRect();
 
-    node1edges = graph.get(node1);
-    node2edges = graph.get(node2);
+    const x = nodeRect.left - boardRect.left + RADIUS;
+    const y = nodeRect.top - boardRect.top + RADIUS;
 
-    index1 = node1edges.indexOf(edge);
-    index2 = node2edges.indexOf(edge);
+    return [x, y];
+}
 
-    node1edges.splice(index1, 1);
-    node2edges.splice(index2, 1);
+// removes edge from graph DB, removes it from both nodes
+function removeEdge(edgeToRemove) {
+    const node1 = edge[0];
+    const node2 = edge[1];
+
+    const index1 = getEdgeIndexFromStartNode(node1, edgeToRemove);
+    const index2 = getEdgeIndexFromStartNode(node2, edgeToRemove);
+
+    // remove edges from graph (from both nodes)
+    graph.get(node1).splice(index1, 1);
+    graph.get(node2).splice(index2, 1);
+}
+
+/* 
+   return the index of an edge in a node's edges list in graph
+   if not found, returns null
+*/
+function getEdgeIndexFromStartNode(node, edge) {
+    nodeEdges = graph.get(node);
+
+    const startNode = edge[0];
+    const endNode = edge[1];
+
+    // for every node in starting node edges list
+    for (var i = 0; i < nodeEdges.length; i++) {
+        const currEdge = nodeEdges[i];
+        const currStartNode = currEdge[0];
+        const currEndNode = currEdge[1];
+
+        const isEdgeMatched = (currStartNode == startNode) && (currEndNode == endNode);
+
+        // if the currEdge is matched to edge then return index
+        if (isEdgeMatched) return i;
+    }
+
+    return null;
 }
 
 function updateWeightPosition(edge) {
     const weight = edge[3];
-
     const node1 = edge[0];
     const node2 = edge[1];
-    const node1Rect = node1.getBoundingClientRect();
-    const node2Rect = node2.getBoundingClientRect();
 
-    const boardRect = svg.getBoundingClientRect();
+    const [cx, cy] = getCurvedCenterFromNodes(node1, node2);
 
-    const x1 = node1Rect.left - boardRect.left + RADIUS;
-    const y1 = node1Rect.top - boardRect.top + RADIUS;
-    const x2 = node2Rect.left - boardRect.left + RADIUS;
-    const y2 = node2Rect.top - boardRect.top + RADIUS;
-
-    const xDistance = Math.abs(x1 - x2);
-    const xMin = Math.min(x1, x2);
-    const yDistance = Math.abs(y1 - y2);
-    const yMin = Math.min(y1, y2);
-
-    weight.setAttribute("x", xMin + xDistance / 2);
-    weight.setAttribute("y", yMin + yDistance / 2);
-
+    weight.setAttribute("x", cx);
+    weight.setAttribute("y", cy);
 }
