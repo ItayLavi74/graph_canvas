@@ -95,7 +95,7 @@ function drawNode(x, y) {
             circle.setAttribute("stroke", "#0db8c4")
             createEdge.push(g);
 
-            setTimeout(drawEdge(createEdge[0], createEdge[1]), 100);
+            setTimeout(() => { drawEdge(createEdge[0], createEdge[1]) }, 100);
 
         } else {
             circle.setAttribute("stroke", "#0db8c4")
@@ -171,17 +171,18 @@ function hasEdge(node1, node2) {
             edgeAlreadyExist = true;
         }
     })
-
+    console.log(edgeAlreadyExist);
     return edgeAlreadyExist;
 }
 
 
 function drawEdge(node1, node2) {
-
-    node1Rect = node1.getBoundingClientRect();
-    node2Rect = node2.getBoundingClientRect();
-
-    boardRect = svg.getBoundingClientRect();
+    // check if the edge already exist
+    // return if true
+    if (hasEdge(node1, node2)) {
+        resetSelectedEdges();
+        return;
+    }
 
     let line;
 
@@ -245,60 +246,71 @@ function drawEdge(node1, node2) {
     edgesGroup.appendChild(line);
     weightsGroup.appendChild(weight);
 
-    // delete line on right click
-    line.addEventListener("contextmenu", (e) => {
-        e.preventDefault();
+    // edge and weight interaction handeling
+    {
+        // delete line on right click
+        line.addEventListener("contextmenu", (e) => {
+            e.preventDefault();
 
-        // remove line from screen
-        edgesGroup.removeChild(line);
-        weightsGroup.removeChild(weight);
+            // remove line from screen
+            edgesGroup.removeChild(line);
+            weightsGroup.removeChild(weight);
 
-        // remove doubled line if graph is non directional
-        if (!directional_graph) {
-            const ghostEdge = getGhostEdge(edge);
-            const ghostLine = ghostEdge[2];
-            const ghostWeight = ghostEdge[3];
+            // remove doubled line if graph is non directional
+            if (!directional_graph) {
+                const ghostEdge = getGhostEdge(edge);
+                const ghostLine = ghostEdge[2];
+                const ghostWeight = ghostEdge[3];
 
-            edgesGroup.removeChild(ghostLine);
-            weightsGroup.removeChild(ghostWeight);
-        }
+                edgesGroup.removeChild(ghostLine);
+                weightsGroup.removeChild(ghostWeight);
+            }
 
-        // remove edge from DB
-        if (!directional_graph) {
-            const reversedEdge = [node2, node1, line, weight];
+            // remove edge from DB
+            if (!directional_graph) {
+                const reversedEdge = [node2, node1, line, weight];
 
-            removeEdge(edge);
-            removeEdge(reversedEdge);
-        }
-        else {
-            removeEdge(edge);
-        }
-    })
+                removeEdge(edge);
+                removeEdge(reversedEdge);
+            }
+            else {
+                removeEdge(edge);
+            }
+        })
 
-    weight.addEventListener("click", (e) => {
-        e.stopPropagation();
+        weight.addEventListener("click", (e) => {
+            e.stopPropagation();
 
-        didInputWeight = true;
-        currentWeight = weight;
+            didInputWeight = true;
+            currentWeight = weight;
 
-        const weightRect = weight.getBoundingClientRect();
-        const x = weightRect.left;
-        const y = weightRect.top;
+            const weightRect = weight.getBoundingClientRect();
+            const x = weightRect.left;
+            const y = weightRect.top;
 
 
-        input.style.display = "block";
-        input.style.left = x + "px";
-        input.style.top = y + "px";
+            input.style.display = "block";
+            input.style.left = x + "px";
+            input.style.top = y + "px";
 
-        input.focus();
+            input.focus();
 
-    })
+        })
+    }
 
+
+    resetSelectedEdges();
+
+    createEdge.length = 0;
+}
+
+function resetSelectedEdges() {
 
     createEdge.forEach(elem => {
         circle = elem.querySelector("circle");
         circle.setAttribute("stroke", "#c48d00")
     });
+
     createEdge.length = 0;
 }
 
