@@ -19,7 +19,7 @@ const input = document.getElementById("input-weight");
 
 const MAX_WEIGHT_DIGITS = 3;
 
-const directional_graph = true;
+const directional_graph = false;
 
 const nodes = [];
 const RADIUS = 20;
@@ -437,8 +437,8 @@ function getNodeCords(node) {
 
 // removes edge from graph DB, removes it from both nodes
 function removeEdge(edgeToRemove) {
-    const node1 = edge[0];
-    const node2 = edge[1];
+    const node1 = edgeToRemove[0];
+    const node2 = edgeToRemove[1];
 
     const index1 = getEdgeIndexFromStartNode(node1, edgeToRemove);
     const index2 = getEdgeIndexFromStartNode(node2, edgeToRemove);
