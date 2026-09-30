@@ -109,14 +109,14 @@ function drawNode(x, y) {
 
         // updating number on other nodes by
         // removing this node from the nodes array
-        const index = nodes.indexOf(g);
+        const index = nodes.indexOf(node);
         nodes.splice(index, 1);
         updateNodesCharsAfterDelete(index);
 
         // remove all lines connected to this node
-        removeConnectedLines(g);
+        removeConnectedLines(node);
 
-        svg.removeChild(g);
+        svg.removeChild(node);
     })
 
     node.addEventListener("click", (e) => {
@@ -326,7 +326,7 @@ function drawEdge(node1, node2) {
 
 function updateEdgeCurve(edge) {
     // console.log("edge to curve update:", edge);
-    if (edge == null) return;
+    if (edge == null || !directional_graph) return;
     updateLineCurve(edge);
     updateWeightPosition(edge);
 }
