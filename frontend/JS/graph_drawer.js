@@ -34,11 +34,11 @@ const linesByNode = new Map();
 
 function drawNode(x, y) {
 
-    const g = document.createElementNS(svgNS, "g");
-    g.setAttribute("transform", `translate(${x}, ${y})`);
+    const node = document.createElementNS(svgNS, "g");
+    node.setAttribute("transform", `translate(${x}, ${y})`);
 
-    nodes.push(g);
-    graph.set(g, []);
+    nodes.push(node);
+    graph.set(node, []);
 
     const circle = document.createElementNS(svgNS, "circle");
     circle.setAttribute("cx", 0);
@@ -55,14 +55,14 @@ function drawNode(x, y) {
     text.setAttribute("dominant-baseline", "middle");
     text.textContent = String.fromCharCode(nodes.indexOf(g) + 65);
 
-    g.appendChild(circle);
-    g.appendChild(text);
+    node.appendChild(circle);
+    node.appendChild(text);
 
     svg.appendChild(g);
 
 
     // MOVE
-    g.addEventListener("mousedown", (e) => {
+    node.addEventListener("mousedown", (e) => {
         e.stopPropagation();
 
         function onMouseMove(e) {
@@ -78,7 +78,7 @@ function drawNode(x, y) {
 
     });
 
-    g.addEventListener("click", (e) => {
+    node.addEventListener("click", (e) => {
         e.preventDefault();
 
         if (didDrag || didInputWeight) {
@@ -104,14 +104,14 @@ function drawNode(x, y) {
     });
 
     // delete node on right click
-    g.addEventListener("contextmenu", (e) => {
+    node.addEventListener("contextmenu", (e) => {
         e.preventDefault();
 
         // updating number on other nodes by
         // removing this node from the nodes array
         const index = nodes.indexOf(g);
         nodes.splice(index, 1);
-        updateNumbers(index);
+        updateNodesCharsAfterDelete(index);
 
         // remove all lines connected to this node
         removeConnectedLines(g);
@@ -119,14 +119,11 @@ function drawNode(x, y) {
         svg.removeChild(g);
     })
 
-
-
-
-    g.addEventListener("click", (e) => {
+    node.addEventListener("click", (e) => {
         e.stopPropagation();
     });
 
-    return g;
+    return node;
 }
 
 // svg event listeners
@@ -149,7 +146,8 @@ function drawNode(x, y) {
     });
 }
 
-function setCordsToCursor(g, e) {
+// while draging a node, update node and related edges position
+function setCordsToCursor(node, e) {
     const rect = svg.getBoundingClientRect();
     let x = e.clientX - rect.left;
     let y = e.clientY - rect.top;
@@ -157,19 +155,17 @@ function setCordsToCursor(g, e) {
     x = Math.max(RADIUS, Math.min(rect.width - RADIUS, x));
     y = Math.max(RADIUS, Math.min(rect.height - RADIUS, y));
 
-
-    g.setAttribute("transform", `translate(${x}, ${y})`);
-    updateEdgesPosition(g);
+    node.setAttribute("transform", `translate(${x}, ${y})`);
+    updateEdgesPosition(node);
 }
 
-
-function updateNumbers(index) {
+// update nodes chars starting from index on nodes array
+function updateNodesCharsAfterDelete(index) {
     for (let i = index; i < nodes.length; i++) {
         const text = nodes[i].querySelector("text");
         text.textContent = String.fromCharCode(i + 65);
     }
 }
-
 
 // check if the edge is already exist
 function hasEdge(node1, node2) {
