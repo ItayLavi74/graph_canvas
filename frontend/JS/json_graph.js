@@ -1,12 +1,3 @@
-const runButton = document.getElementById("runButton");
-
-runButton.addEventListener("click", run);
-
-function run() {
-    const adjList = parseGraphToAdjList(graph);
-
-    console.log(adjList);
-}
 
 function parseGraphToAdjList(graph) {
     const adjList = {};
@@ -19,7 +10,7 @@ function parseGraphToAdjList(graph) {
         edges.forEach(edge => {
             const secondNode = edge[1].querySelector("text").textContent;
             if (secondNode == node) return;
-            const weight = edge[3].textContent;
+            const weight = Number(edge[3].textContent);
 
             adjList[node][secondNode] = weight;
         });

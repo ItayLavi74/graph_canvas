@@ -19,7 +19,7 @@ const input = document.getElementById("input-weight");
 
 const MAX_WEIGHT_DIGITS = 3;
 
-const directional_graph = true;
+const directional_graph = false;
 
 const nodes = [];
 const RADIUS = 20;
@@ -53,7 +53,7 @@ function drawNode(x, y) {
     text.setAttribute("y", 0);
     text.setAttribute("text-anchor", "middle");
     text.setAttribute("dominant-baseline", "middle");
-    text.textContent = nodes.indexOf(g) + 1;
+    text.textContent = String.fromCharCode(nodes.indexOf(g) + 65);
 
     g.appendChild(circle);
     g.appendChild(text);
@@ -166,7 +166,7 @@ function setCordsToCursor(g, e) {
 function updateNumbers(index) {
     for (let i = index; i < nodes.length; i++) {
         const text = nodes[i].querySelector("text");
-        text.textContent = Number(text.textContent) - 1;
+        text.textContent = String.fromCharCode(i + 65);
     }
 }
 
