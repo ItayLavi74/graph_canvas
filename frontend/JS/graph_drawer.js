@@ -19,7 +19,7 @@ const input = document.getElementById("input-weight");
 
 const MAX_WEIGHT_DIGITS = 3;
 
-const directional_graph = true;
+const directional_graph = false;
 
 const nodes = [];
 const RADIUS = 20;
@@ -188,6 +188,7 @@ function drawEdge(node1, node2) {
     // check if the edge already exist
     // return if true
     if (hasEdge(node1, node2)) {
+        console.log("The edge you are trying to draw is already exist.");
         resetSelectedEdges();
         return;
     }
@@ -281,12 +282,12 @@ function drawEdge(node1, node2) {
 
             // remove doubled line if graph is non directional
             if (!directional_graph) {
-                const ghostEdge = getGhostEdge(edge);
-                const ghostLine = ghostEdge[2];
-                const ghostWeight = ghostEdge[3];
+                const twinEdge = edge[4];
+                const twinLine = twinEdge[2];
+                const twinWeight = twinEdge[3];
 
-                edgesGroup.removeChild(ghostLine);
-                weightsGroup.removeChild(ghostWeight);
+                edgesGroup.removeChild(twinLine);
+                weightsGroup.removeChild(twinWeight);
             }
 
             // remove edge from DB
@@ -377,20 +378,6 @@ function resetSelectedEdges() {
     createEdge.length = 0;
 }
 
-// return ghost edge for dealing with double edge in a non directional graph
-function getGhostEdge(edge) {
-    const node1 = edge[0];
-    const node2 = edge[1];
-
-    let ghostEdge;
-    graph.get(node1).forEach(e => {
-        if (e[0] == node2) {
-            ghostEdge = e;
-            return;
-        }
-    })
-    return ghostEdge;
-}
 
 // input weight events
 {
@@ -411,12 +398,12 @@ function getGhostEdge(edge) {
                 const weight = currentEdge[3];
 
                 weight.textContent = input.value.slice();
-                // update the second edge if graph isn't directional
+                // update the twin edge if graph isn't directional
                 if (!directional_graph) {
-                    const ghostEdge = getGhostEdge(currentEdge);
-                    const ghostWeight = ghostEdge[3];
+                    const twinEdge = currentEdge[4];
+                    const twinWeight = twinEdge[3];
 
-                    ghostWeight.textContent = weight.textContent;
+                    twinWeight.textContent = weight.textContent;
 
                 }
             }
