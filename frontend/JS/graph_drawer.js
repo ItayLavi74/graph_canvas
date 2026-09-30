@@ -19,7 +19,7 @@ const input = document.getElementById("input-weight");
 
 const MAX_WEIGHT_DIGITS = 3;
 
-const directional_graph = false;
+const directional_graph = true;
 
 const nodes = [];
 const RADIUS = 20;
@@ -236,7 +236,7 @@ function drawEdge(node1, node2) {
     // set weight attributes
     {
         weight.textContent = '0';
-        weight.setAttribute("fill", "green");
+        weight.setAttribute("fill", "blue");
         weight.classList.add("weight");
 
         updateWeightPosition(edge);
