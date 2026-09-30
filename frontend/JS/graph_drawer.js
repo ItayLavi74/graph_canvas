@@ -67,7 +67,7 @@ function drawNode(x, y) {
 
         function onMouseMove(e) {
             didDrag = true;
-            setCordsToCursor(g, e);
+            setCordsToCursor(node, e);
         }
 
         document.addEventListener("mousemove", onMouseMove);
@@ -87,19 +87,19 @@ function drawNode(x, y) {
             return;
         }
 
-        if (createEdge[0] == g) {
+        if (createEdge[0] == node) {
             circle.setAttribute("stroke", "#c48d00")
             createEdge.pop()
         } else if (createEdge.length == 1) {
             // if we are choosing the second node
             circle.setAttribute("stroke", "#0db8c4")
-            createEdge.push(g);
+            createEdge.push(node);
 
             setTimeout(() => { drawEdge(createEdge[0], createEdge[1]) }, 100);
 
         } else {
             circle.setAttribute("stroke", "#0db8c4")
-            createEdge.push(g)
+            createEdge.push(node)
         }
     });
 
