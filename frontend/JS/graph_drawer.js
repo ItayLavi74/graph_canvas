@@ -53,12 +53,12 @@ function drawNode(x, y) {
     text.setAttribute("y", 0);
     text.setAttribute("text-anchor", "middle");
     text.setAttribute("dominant-baseline", "middle");
-    text.textContent = String.fromCharCode(nodes.indexOf(g) + 65);
+    text.textContent = String.fromCharCode(nodes.indexOf(node) + 65);
 
     node.appendChild(circle);
     node.appendChild(text);
 
-    svg.appendChild(g);
+    svg.appendChild(node);
 
 
     // MOVE
