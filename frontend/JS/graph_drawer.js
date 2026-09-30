@@ -205,7 +205,7 @@ function drawEdge(node1, node2) {
     const edge = [node1, node2, line, weight, null];
     const twinEdge = hasTwinEdge(edge);
 
-    // update twins pointers
+    // update twins pointers if needed
     if (twinEdge != null) {
         edge[4] = twinEdge;
         twinEdge[4] = edge;
@@ -234,9 +234,8 @@ function drawEdge(node1, node2) {
         line.setAttribute("stroke", "black");
         line.setAttribute("stroke-width", "4px");
     }
-    // updates edge's line
+    // updates edge's line pointer
     edge[2] = line;
-
 
     // set weight attributes
     {
@@ -250,7 +249,7 @@ function drawEdge(node1, node2) {
     graph.get(node1).push(edge);
     graph.get(node2).push(edge);
 
-    // if graph is non dircational add the reversed edge
+    // if graph is non dircational add the reversed edge (considered as twin edge)
     if (!directional_graph) {
         // flag for drawing the second edge (the reversed one) only once
         if (!isSecondEdge) {
@@ -322,12 +321,10 @@ function drawEdge(node1, node2) {
         })
     }
 
-    // update curve for twin edge
+    // update curve for twin edge if needed (checkd in function)
     updateEdgeCurve(twinEdge);
 
-
     resetSelectedEdges();
-
     createEdge.length = 0;
 }
 
@@ -367,7 +364,7 @@ function hasTwinEdge(edge) {
     return reversedEdge;
 }
 
-// reset selected nodes (colors and DB)
+// reset selected nodes (stroke colors and DB)
 function resetSelectedEdges() {
 
     createEdge.forEach(elem => {
@@ -377,7 +374,6 @@ function resetSelectedEdges() {
 
     createEdge.length = 0;
 }
-
 
 // input weight events
 {
@@ -446,7 +442,8 @@ function getCenterFromEdge(edge) {
     let cx = (x1 + x2) / 2;
     let cy = (y1 + y2) / 2;
 
-    if (edge[4] != null && len !== 0) {
+    // if directional or there is no twin -> dont curve
+    if (directional_graph && edge[4] != null && len !== 0) {
         const nx = -dy / len;
         const ny = dx / len;
         const curve = 20;
@@ -573,27 +570,11 @@ function getEdgeIndexFromStartNode(node, edge) {
     return null;
 }
 
+// update weight text position to match line (handles curved lines)
 function updateWeightPosition(edge) {
     const weight = edge[3];
-    const node1 = edge[0];
-    const node2 = edge[1];
 
-    if (directional_graph) {
-        const [cx, cy] = getCenterFromEdge(edge);
-
-        weight.setAttribute("x", cx);
-        weight.setAttribute("y", cy);
-    }
-    else {
-        const [x1, y1] = getNodeCords(node1);
-        const [x2, y2] = getNodeCords(node2);
-
-        const xDistance = Math.abs(x1 - x2);
-        const xMin = Math.min(x1, x2);
-        const yDistance = Math.abs(y1 - y2);
-        const yMin = Math.min(y1, y2);
-
-        weight.setAttribute("x", xMin + xDistance / 2);
-        weight.setAttribute("y", yMin + yDistance / 2);
-    }
+    const [cx, cy] = getCenterFromEdge(edge);
+    weight.setAttribute("x", cx);
+    weight.setAttribute("y", cy);
 }
