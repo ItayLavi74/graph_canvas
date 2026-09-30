@@ -19,7 +19,7 @@ const input = document.getElementById("input-weight");
 
 const MAX_WEIGHT_DIGITS = 3;
 
-const directional_graph = false;
+const directional_graph = true;
 
 const nodes = [];
 const RADIUS = 20;
@@ -197,22 +197,34 @@ function drawEdge(node1, node2) {
     const [x1, y1] = getNodeCords(node1);
     const [x2, y2] = getNodeCords(node2);
 
+    // create weight
+    const weight = document.createElementNS(svgNS, "text");
+
+    // create edge
+    const edge = [node1, node2, line, weight, null];
+    const twinEdge = hasTwinEdge(edge);
+
+    // update twins pointers
+    if (twinEdge != null) {
+        edge[4] = twinEdge;
+        twinEdge[4] = edge;
+    }
+
     //set line attributes
-    if (directional_graph) {
+    if (directional_graph) { // if graph is diractional
         line = document.createElementNS(svgNS, "path");
 
         line.setAttribute("fill", "none");
         line.setAttribute("stroke", "black");
         line.setAttribute("stroke-width", "3px");
 
-        // add arrow and curve
-
-        const [cx, cy] = getCurvedCenterFromNodes(node1, node2);
-
+        // add arrow and curve if needed
+        // curve is defined in 'getCenterFromEdge'
+        const [cx, cy] = getCenterFromEdge(edge);
         line.setAttribute("d", `M ${x1},${y1} Q ${cx},${cy} ${x2},${y2}`);
         line.setAttribute("marker-end", "url(#arrowhead-black)");
     }
-    else {
+    else { // if graph is not directional
         line = document.createElementNS(svgNS, "line");
         line.setAttribute("x1", `${x1}`);
         line.setAttribute("y1", `${y1}`);
@@ -221,12 +233,9 @@ function drawEdge(node1, node2) {
         line.setAttribute("stroke", "black");
         line.setAttribute("stroke-width", "4px");
     }
+    // updates edge's line
+    edge[2] = line;
 
-    // create weight
-    const weight = document.createElementNS(svgNS, "text");
-
-    // create edge
-    const edge = [node1, node2, line, weight];
 
     // set weight attributes
     {
@@ -263,6 +272,12 @@ function drawEdge(node1, node2) {
             // remove line from screen
             edgesGroup.removeChild(line);
             weightsGroup.removeChild(weight);
+
+            const twinEdge = edge[4];
+            if (directional_graph && twinEdge != null) {
+                twinEdge[4] = null;
+                updateEdgeCurve(twinEdge);
+            }
 
             // remove doubled line if graph is non directional
             if (!directional_graph) {
@@ -306,12 +321,52 @@ function drawEdge(node1, node2) {
         })
     }
 
+    // update curve for twin edge
+    updateEdgeCurve(twinEdge);
+
 
     resetSelectedEdges();
 
     createEdge.length = 0;
 }
 
+function updateEdgeCurve(edge) {
+    // console.log("edge to curve update:", edge);
+    if (edge == null) return;
+    updateLineCurve(edge);
+    updateWeightPosition(edge);
+}
+
+// update line curve
+function updateLineCurve(edge) {
+    const [node1, node2, line] = edge;
+
+    const [x1, y1] = getNodeCords(node1);
+    const [x2, y2] = getNodeCords(node2);
+
+    const [cx, cy] = getCenterFromEdge(edge);
+
+    line.setAttribute("d", `M ${x1},${y1} Q ${cx},${cy} ${x2},${y2}`);
+}
+
+// check if edge has twin (edge with similar nodes) and return it if it does, 
+// return null otherwise
+function hasTwinEdge(edge) {
+    const [node1, node2] = edge;
+
+    let reversedEdge = null;
+    graph.get(node1).forEach((currEdge) => {
+        const [currNode1, currNode2] = currEdge;
+
+        const isReversedMatch = (node1 == currNode2) && (node2 == currNode1);
+
+        if (isReversedMatch) reversedEdge = currEdge;
+    })
+
+    return reversedEdge;
+}
+
+// reset selected nodes (colors and DB)
 function resetSelectedEdges() {
 
     createEdge.forEach(elem => {
@@ -391,7 +446,8 @@ function getGhostEdge(edge) {
 }
 
 // returns the center between two dots
-function getCurvedCenterFromNodes(node1, node2) {
+function getCenterFromEdge(edge) {
+    const [node1, node2] = edge;
 
     const [x1, y1] = getNodeCords(node1);
     const [x2, y2] = getNodeCords(node2);
@@ -403,7 +459,7 @@ function getCurvedCenterFromNodes(node1, node2) {
     let cx = (x1 + x2) / 2;
     let cy = (y1 + y2) / 2;
 
-    if (len !== 0) {
+    if (edge[4] != null && len !== 0) {
         const nx = -dy / len;
         const ny = dx / len;
         const curve = 20;
@@ -426,7 +482,7 @@ function updateEdgesPosition(node) {
             if (edge.indexOf(node) == 0) {
                 const secondNode = edge[1];
                 const [x2, y2] = getNodeCords(secondNode);
-                const [cx, cy] = getCurvedCenterFromNodes(node, secondNode);
+                const [cx, cy] = getCenterFromEdge(edge);
 
                 //update line cords
                 line.setAttribute("d", `M ${x1},${y1} Q ${cx},${cy} ${x2},${y2}`);
@@ -434,7 +490,7 @@ function updateEdgesPosition(node) {
             } else { // if this node is the end of this edge
                 const secondNode = edge[0];
                 const [x2, y2] = getNodeCords(secondNode);
-                const [cx, cy] = getCurvedCenterFromNodes(secondNode, node);
+                const [cx, cy] = getCenterFromEdge(edge);
 
                 //update line cords
                 line.setAttribute("d", `M ${x2},${y2} Q ${cx},${cy} ${x1},${y1}`);
@@ -459,7 +515,7 @@ function removeConnectedLines(node) {
     const neighbors = [];
 
     graph.get(node).forEach((elem) => {
-        // removing all edgess tarting from node
+        // removing all edgess starting from node
         const line = elem[2];
         edgesGroup.removeChild(line);
         const weight = elem[3];
@@ -470,7 +526,7 @@ function removeConnectedLines(node) {
         neighbors.push(neighbor);
     })
 
-    // remove edges from neighbors in 'edgesByNode'
+    // remove edges from neighbors in graph
     neighbors.forEach((neighbor) => {
         const neighborEdges = graph.get(neighbor);
         const newNeighborEdges = neighborEdges.filter(elem =>
@@ -478,10 +534,10 @@ function removeConnectedLines(node) {
         graph.set(neighbor, newNeighborEdges);
     })
 
-
     graph.delete(node);
 }
 
+// return x,y cords of node
 function getNodeCords(node) {
     const boardRect = svg.getBoundingClientRect();
     const nodeRect = node.getBoundingClientRect();
@@ -536,7 +592,7 @@ function updateWeightPosition(edge) {
     const node2 = edge[1];
 
     if (directional_graph) {
-        const [cx, cy] = getCurvedCenterFromNodes(node1, node2);
+        const [cx, cy] = getCenterFromEdge(edge);
 
         weight.setAttribute("x", cx);
         weight.setAttribute("y", cy);
